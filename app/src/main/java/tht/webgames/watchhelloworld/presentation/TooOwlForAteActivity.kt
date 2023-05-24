@@ -35,7 +35,7 @@ import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.TimeText
 import tht.webgames.watchhelloworld.presentation.theme.WatchHelloWorldTheme
 
-class MainActivity : ComponentActivity() {
+class TooOwlForAteActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

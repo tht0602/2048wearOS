@@ -1,19 +1,35 @@
 package tht.webgames.watchhelloworld.presentation
 
 import android.os.Bundle
-import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.LifecycleCoroutineScope
 import androidx.lifecycle.lifecycleScope
-import androidx.wear.compose.material.*
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.wear.compose.material.Card
+import androidx.wear.compose.material.ExperimentalWearMaterialApi
+import androidx.wear.compose.material.Scaffold
+import androidx.wear.compose.material.ScalingLazyColumn
+import androidx.wear.compose.material.Text
+import androidx.wear.compose.material.TimeText
 import com.orhanobut.logger.AndroidLogAdapter
 import com.orhanobut.logger.Logger
 import tht.webgames.watchhelloworld.presentation.network.ForexRs
@@ -28,7 +44,7 @@ class MmbTestActivity : ComponentActivity() {
         initLogger()
 
         setContent {
-            WearApp(mmbTestPresenter)
+            WearApp(mmbTestPresenter, lifecycleScope)
         }
         //window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
@@ -36,108 +52,123 @@ class MmbTestActivity : ComponentActivity() {
     private fun initLogger() {
         Logger.addLogAdapter(AndroidLogAdapter())
     }
+}
 
-    @OptIn(ExperimentalWearMaterialApi::class)
-    @Composable
-    fun WearApp(presenter: MmbTestContract.Presenter) {
-        WatchHelloWorldTheme {
-            var forexList by remember { mutableStateOf(listOf<ForexItem>()) }
+@Composable
+fun WearApp(presenter: MmbTestContract.Presenter, lifecycleScope: LifecycleCoroutineScope) {
+    var forexList: List<ForexItem> = listOf()
+    val navController = rememberNavController()
 
-            if (forexList.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    TimeText()
-                    Text(
-                        text = "安安",
-                        fontSize = 60.sp,
-                        maxLines = 1,
-                        softWrap = false,
-                        color = Color(0xFFBBBBBB),
-                    )
-
-                }
-            } else {
-                ScalingLazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                ) {
-                    items(forexList.size) { index ->
-                        Card(
-                            onClick = { /**/ },
-                        ) {
-                            Row(Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = forexList[index].name,
-                                    fontSize = 25.sp,
-                                    maxLines = 1,
-                                    color = Color(0xFFBBBBBB),
-                                )
-                                Text(
-                                    text = forexList[index].exchange,
-                                    fontSize = 20.sp,
-                                    maxLines = 1,
-                                    color = Color(0xFFBBBBBB),
-                                )
-                            }
-                        }
-                    }
+    WatchHelloWorldTheme {
+        Scaffold(
+            content = {
+                // 頁面管理功能，先去 Greeting
+                NavHost(navController = navController, startDestination = "Greeting") {
+                    composable("Greeting") { Greeting(/*...*/) }
+                    composable("ForexList") { ForexList(forexList) }
                 }
             }
+        )
 
-            DisposableEffect(presenter) {
-                presenter.setViewImpl(
-                    object : MmbTestContract.View {
-                        override fun onForexSuccess(response: ForexRs) {
-                            forexList = listOf(
-                                ForexItem(
-                                    name = "美金  ",
-                                    exchange = String.format("%.4f", response.getUSD())
-                                ),
-                                ForexItem(
-                                    name = "人民  ",
-                                    exchange = String.format("%.4f", response.getRMB())
-                                ),
-                                ForexItem(
-                                    name = "歐元  ",
-                                    exchange = String.format("%.4f", response.getEUR())
-                                ),
-                                ForexItem(
-                                    name = "日圓  ",
-                                    exchange = String.format("%.4f", response.getJPY())
-                                ),
-                                ForexItem(
-                                    name = "澳幣  ",
-                                    exchange = String.format("%.4f", response.getAUD())
-                                ),
-                                ForexItem(
-                                    name = "美金  ",
-                                    exchange = String.format("%.4f", response.getUSD())
-                                ),
-                                ForexItem(
-                                    name = "美金  ",
-                                    exchange = String.format("%.4f", response.getUSD())
-                                ),
-                                ForexItem(
-                                    name = "美金  ",
-                                    exchange = String.format("%.4f", response.getUSD())
-                                ),
-                            )
-                        }
+        DisposableEffect(presenter) {
+            presenter.setViewImpl(
+                object : MmbTestContract.View {
+                    override fun onForexSuccess(response: ForexRs) {
+                        // 把拿到的資料塞進 list
+                        forexList = listOf(
+                            ForexItem(
+                                name = "美金",
+                                exchange = ForexUtils.floatToString(response.getUSD())
+                            ),
+                            ForexItem(
+                                name = "人民",
+                                exchange = ForexUtils.floatToString(response.getRMB())
+                            ),
+                            ForexItem(
+                                name = "歐元",
+                                exchange = ForexUtils.floatToString(response.getEUR())
+                            ),
+                            ForexItem(
+                                name = "日圓",
+                                exchange = ForexUtils.floatToString(response.getJPY())
+                            ),
+                            ForexItem(
+                                name = "澳幣",
+                                exchange = ForexUtils.floatToString(response.getAUD())
+                            ),
+                        )
+
+                        // 換頁
+                        navController.navigate("ForexList")
                     }
-                )
-                presenter.getForex(lifecycleScope)
-                onDispose {
-                    presenter.setViewImpl(null)
+                }
+            )
+            presenter.getForex(lifecycleScope)
+            onDispose {
+                // 釋放掉 callback
+                presenter.setViewImpl(null)
+            }
+        }
+    }
+}
+
+object ForexUtils{
+    fun floatToString(float: Float) = String.format("%.4f", float)
+}
+
+@OptIn(ExperimentalWearMaterialApi::class)
+@Composable
+fun Greeting() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        TimeText()
+        Text(
+            text = "安安",
+            fontSize = 60.sp,
+            maxLines = 1,
+            softWrap = false,
+            color = Color(0xFFBBBBBB),
+        )
+
+    }
+}
+
+@Composable
+fun ForexList(forexListItems: List<ForexItem>) {
+    ScalingLazyColumn(
+        modifier = Modifier.fillMaxSize(),
+    ) {
+        items(forexListItems.size) { index ->
+            Card(
+                onClick = { /**/ },
+            ) {
+                Row(
+                    Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = forexListItems[index].name,
+                        fontSize = 25.sp,
+                        maxLines = 1,
+                        color = Color(0xFFBBBBBB),
+                    )
+                    Text(
+                        modifier = Modifier.padding(start= 10.dp),
+                        text = forexListItems[index].exchange,
+                        fontSize = 20.sp,
+                        maxLines = 1,
+                        color = Color(0xFFBBBBBB),
+                    )
                 }
             }
         }
     }
-
-    data class ForexItem(
-        val name: String,
-        val exchange: String
-    )
 }
+
+data class ForexItem(
+    val name: String,
+    val exchange: String
+)
