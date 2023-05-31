@@ -10,10 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -112,7 +108,7 @@ fun WearApp(presenter: MmbTestContract.Presenter, lifecycleScope: LifecycleCorou
     }
 }
 
-object ForexUtils{
+object ForexUtils {
     fun floatToString(float: Float) = String.format("%.4f", float)
 }
 
@@ -156,7 +152,7 @@ fun ForexList(forexListItems: List<ForexItem>) {
                         color = Color(0xFFBBBBBB),
                     )
                     Text(
-                        modifier = Modifier.padding(start= 10.dp),
+                        modifier = Modifier.padding(start = 10.dp),
                         text = forexListItems[index].exchange,
                         fontSize = 20.sp,
                         maxLines = 1,

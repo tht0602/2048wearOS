@@ -3,9 +3,7 @@ package tht.webgames.watchhelloworld.presentation.network
 import com.google.gson.Gson
 import com.google.gson.JsonElement
 import com.google.gson.annotations.SerializedName
-import org.json.JSONArray
 import java.io.Serializable
-import kotlin.math.roundToLong
 
 
 open class BaseData : Serializable {
