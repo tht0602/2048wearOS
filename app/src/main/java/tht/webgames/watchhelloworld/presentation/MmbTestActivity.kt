@@ -28,11 +28,12 @@ import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.TimeText
 import com.orhanobut.logger.AndroidLogAdapter
 import com.orhanobut.logger.Logger
+import org.koin.android.ext.android.inject
 import tht.webgames.watchhelloworld.presentation.network.ForexRs
 import tht.webgames.watchhelloworld.presentation.theme.WatchHelloWorldTheme
 
 class MmbTestActivity : ComponentActivity() {
-    private val mmbTestPresenter: MmbTestContract.Presenter = MmbTestPresenter()
+    private val mmbTestPresenter: MmbTestContract.Presenter by inject()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
