@@ -9,102 +9,42 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.LifecycleCoroutineScope
-import androidx.lifecycle.lifecycleScope
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
+import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.material.Card
 import androidx.wear.compose.material.ExperimentalWearMaterialApi
-import androidx.wear.compose.material.Scaffold
-import androidx.wear.compose.material.ScalingLazyColumn
 import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.TimeText
-import com.orhanobut.logger.AndroidLogAdapter
-import com.orhanobut.logger.Logger
-import org.koin.android.ext.android.inject
-import tht.webgames.watchhelloworld.presentation.network.ForexRs
+import org.koin.androidx.compose.koinViewModel
 import tht.webgames.watchhelloworld.presentation.theme.WatchHelloWorldTheme
 
 class MmbTestActivity : ComponentActivity() {
-    private val mmbTestPresenter: MmbTestContract.Presenter by inject()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        initLogger()
-
         setContent {
-            WearApp(mmbTestPresenter, lifecycleScope)
+            WearApp()
         }
         //window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-    }
-
-    private fun initLogger() {
-        Logger.addLogAdapter(AndroidLogAdapter())
     }
 }
 
 @Composable
-fun WearApp(presenter: MmbTestContract.Presenter, lifecycleScope: LifecycleCoroutineScope) {
-    var forexList: List<ForexItem> = listOf()
-    val navController = rememberNavController()
-
+fun WearApp() {
+    val mmbTestViewModel: MmbTestViewModel = koinViewModel()
     WatchHelloWorldTheme {
-        Scaffold(
-            content = {
-                // 頁面管理功能，先去 Greeting
-                NavHost(navController = navController, startDestination = "Greeting") {
-                    composable("Greeting") { Greeting(/*...*/) }
-                    composable("ForexList") { ForexList(forexList) }
-                }
-            }
-        )
-
-        DisposableEffect(presenter) {
-            presenter.setViewImpl(
-                object : MmbTestContract.View {
-                    override fun onForexSuccess(response: ForexRs) {
-                        // 把拿到的資料塞進 list
-                        forexList = listOf(
-                            ForexItem(
-                                name = "美金",
-                                exchange = ForexUtils.floatToString(response.getUSD())
-                            ),
-                            ForexItem(
-                                name = "人民",
-                                exchange = ForexUtils.floatToString(response.getRMB())
-                            ),
-                            ForexItem(
-                                name = "歐元",
-                                exchange = ForexUtils.floatToString(response.getEUR())
-                            ),
-                            ForexItem(
-                                name = "日圓",
-                                exchange = ForexUtils.floatToString(response.getJPY())
-                            ),
-                            ForexItem(
-                                name = "澳幣",
-                                exchange = ForexUtils.floatToString(response.getAUD())
-                            ),
-                        )
-
-                        // 換頁
-                        navController.navigate("ForexList")
-                    }
-                }
-            )
-            presenter.getForex(lifecycleScope)
-            onDispose {
-                // 釋放掉 callback
-                presenter.setViewImpl(null)
-            }
+        val state by mmbTestViewModel.state.collectAsState()
+        if (state.isLoading) {
+            Greeting()
+        } else {
+            ForexList(mmbTestViewModel)
         }
     }
 }
@@ -113,7 +53,6 @@ object ForexUtils {
     fun floatToString(float: Float) = String.format("%.4f", float)
 }
 
-@OptIn(ExperimentalWearMaterialApi::class)
 @Composable
 fun Greeting() {
     Box(
@@ -134,10 +73,11 @@ fun Greeting() {
 }
 
 @Composable
-fun ForexList(forexListItems: List<ForexItem>) {
+fun ForexList(viewModel: MmbTestViewModel) {
     ScalingLazyColumn(
         modifier = Modifier.fillMaxSize(),
     ) {
+        val forexListItems = viewModel.state.value.data
         items(forexListItems.size) { index ->
             Card(
                 onClick = { /**/ },
