@@ -1,10 +1,12 @@
 package tht.webgames.watchhelloworld.presentation.mvi
 
 import androidx.lifecycle.ViewModel
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 
-abstract class BaseViewModel<T : UiState, in E : UiEvent> : ViewModel() {
+abstract class BaseViewModel<T : UiState> : ViewModel() {
 
-    abstract val state: Flow<T>
+    abstract val viewModelState: MutableStateFlow<T>
 
 }
+
+interface UiState

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -18,9 +19,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.material.Card
-import androidx.wear.compose.material.ExperimentalWearMaterialApi
 import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.TimeText
+import kotlinx.coroutines.delay
 import org.koin.androidx.compose.koinViewModel
 import tht.webgames.watchhelloworld.presentation.theme.WatchHelloWorldTheme
 
@@ -40,11 +41,17 @@ class MmbTestActivity : ComponentActivity() {
 fun WearApp() {
     val mmbTestViewModel: MmbTestViewModel = koinViewModel()
     WatchHelloWorldTheme {
-        val state by mmbTestViewModel.state.collectAsState()
-        if (state.isLoading) {
-            Greeting()
+        val state by mmbTestViewModel.viewModelState.collectAsState()
+        if (state.data.isEmpty()) {
+            Greeting(
+                state,
+                onGreetingEnd = { mmbTestViewModel.getForex() }
+            )
         } else {
-            ForexList(mmbTestViewModel)
+            ForexList(
+                state,
+                onItemClick = { mmbTestViewModel.clearData() }
+            )
         }
     }
 }
@@ -54,37 +61,54 @@ object ForexUtils {
 }
 
 @Composable
-fun Greeting() {
+fun Greeting(uiState: MmbTestUiState, onGreetingEnd: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
         TimeText()
-        Text(
-            text = "安安",
-            fontSize = 60.sp,
-            maxLines = 1,
-            softWrap = false,
-            color = Color(0xFFBBBBBB),
-        )
 
+        LaunchedEffect(true) {
+            // 這裡是 coroutine scope
+            delay(2000L)
+            // 兩秒鐘後開始讀取
+            onGreetingEnd.invoke()
+        }
+
+        if (uiState.isLoading) {
+            Text(
+                text = "Loading",
+                fontSize = 40.sp,
+                maxLines = 1,
+                softWrap = false,
+                color = Color(0xFFBBBBBB),
+            )
+        } else {
+            Text(
+                text = "安安",
+                fontSize = 60.sp,
+                maxLines = 1,
+                softWrap = false,
+                color = Color(0xFFBBBBBB),
+            )
+        }
     }
 }
 
 @Composable
-fun ForexList(viewModel: MmbTestViewModel) {
+fun ForexList(uiState: MmbTestUiState, onItemClick: () -> Unit) {
     ScalingLazyColumn(
         modifier = Modifier.fillMaxSize(),
     ) {
-        val forexListItems = viewModel.state.value.data
+        val forexListItems = uiState.data
         items(forexListItems.size) { index ->
             Card(
-                onClick = { /**/ },
+                onClick = { onItemClick.invoke() },
             ) {
                 Row(
                     Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
                         text = forexListItems[index].name,

@@ -1,34 +1,29 @@
 package tht.webgames.watchhelloworld.presentation
 
 import androidx.compose.runtime.Immutable
-import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import tht.webgames.watchhelloworld.presentation.mvi.BaseViewModel
-import tht.webgames.watchhelloworld.presentation.mvi.Reducer
-import tht.webgames.watchhelloworld.presentation.mvi.UiEvent
 import tht.webgames.watchhelloworld.presentation.mvi.UiState
 import tht.webgames.watchhelloworld.presentation.network.ForexRs
 import tht.webgames.watchhelloworld.presentation.network.RetrofitManager
 
-class MmbTestViewModel : BaseViewModel<MmbTestUiState, MmbTestUiEvent>() {
+class MmbTestViewModel : BaseViewModel<MmbTestUiState>() {
 
-    private val reducer = MainReducer(MmbTestUiState.initial())
-
-    override val state: StateFlow<MmbTestUiState>
-        get() = reducer.state
-
-    init {
-        viewModelScope.launch() {
-            getForex()
-        }
-    }
+    override val viewModelState = MutableStateFlow(
+        MmbTestUiState(
+            isLoading = false,
+            data = emptyList()
+        )
+    )
 
     fun getForex() {
-        sendEvent(MmbTestUiEvent.QueryingForex)
+        viewModelState.update { oldState ->
+            oldState.copy(isLoading = true)
+        }
         val call: Call<Collection<ForexRs>> = RetrofitManager.service.queryForex()
 
         call.enqueue(object : Callback<Collection<ForexRs>> {
@@ -61,7 +56,9 @@ class MmbTestViewModel : BaseViewModel<MmbTestUiState, MmbTestUiEvent>() {
                             exchange = ForexUtils.floatToString(it.getAUD())
                         ),
                     )
-                    sendEvent(MmbTestUiEvent.QueryingForexSuccess(forexList))
+                    viewModelState.update { oldState ->
+                        oldState.copy(isLoading = false, data = forexList)
+                    }
                 }
             }
 
@@ -71,57 +68,20 @@ class MmbTestViewModel : BaseViewModel<MmbTestUiState, MmbTestUiEvent>() {
         })
     }
 
-    private fun sendEvent(event: MmbTestUiEvent) {
-        reducer.sendEvent(event)
-    }
-
-    private class MainReducer(initial: MmbTestUiState) :
-        Reducer<MmbTestUiState, MmbTestUiEvent>(initial) {
-        override fun reduce(oldState: MmbTestUiState, event: MmbTestUiEvent) {
-            when (event) {
-                is MmbTestUiEvent.QueryingForex -> {
-                    setState(oldState.copy(isLoading = true, data = listOf()))
-                }
-
-                is MmbTestUiEvent.QueryingForexSuccess -> {
-                    setState(
-                        oldState.copy(
-                            isLoading = false,
-                            data = event.list,
-                            isShowAddDialog = false
-                        )
-                    )
-                }
-
-                else -> Unit
-            }
+    fun clearData() {
+        viewModelState.update { oldState ->
+            oldState.copy(data = listOf())
         }
     }
-}
-
-@Immutable
-sealed class MmbTestUiEvent : UiEvent {
-    object QueryingForex : MmbTestUiEvent()
-    data class QueryingForexSuccess(val list: List<ForexItem>) : MmbTestUiEvent()
 }
 
 @Immutable
 data class MmbTestUiState(
     val isLoading: Boolean,
     val data: List<ForexItem>,
-    val isShowAddDialog: Boolean,
 ) : UiState {
-
-    companion object {
-        fun initial() = MmbTestUiState(
-            isLoading = true,
-            data = emptyList(),
-            isShowAddDialog = false
-        )
-    }
-
     override fun toString(): String {
-        return "isLoading: $isLoading, data.size: ${data.size}, isShowAddDialog: $isShowAddDialog"
+        return "isLoading: $isLoading, data.size: ${data.size}"
     }
 }
 
